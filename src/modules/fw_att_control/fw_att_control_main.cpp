@@ -701,11 +701,13 @@ FixedwingAttitudeControl::task_main()
 
 			if (_vehicle_status.is_vtol && _parameters.vtol_type == 0) {
 				/* vehicle is a tailsitter, we need to modify the estimated attitude for fw mode
-				 *
+				 * 如果飞行器是立式起降的，那么我们需要修改固定翼飞机的姿态估计
 				 * Since the VTOL airframe is initialized as a multicopter we need to
 				 * modify the estimated attitude for the fixed wing operation.
+				 * 当垂直起降飞机初始状态设置为多旋翼飞行状态，我们需要为固定翼飞行姿态估计做相应的修改
 				 * Since the neutral position of the vehicle in fixed wing mode is -90 degrees rotated around
 				 * the pitch axis compared to the neutral position of the vehicle in multicopter mode
+				 * 相对于飞行器被设置为多旋翼飞行模式下，固定翼飞机的中心位置需要绕pitch 轴旋转 -90 度的角度。
 				 * we need to swap the roll and the yaw axis (1st and 3rd column) in the rotation matrix.
 				 * Additionally, in order to get the correct sign of the pitch, we need to multiply
 				 * the new x axis of the rotation matrix with -1
@@ -716,7 +718,7 @@ FixedwingAttitudeControl::task_main()
 				 * Rxy	Ryy  Rzy		-Rzy  Ryy  Rxy
 				 * Rxz	Ryz  Rzz		-Rzz  Ryz  Rxz
 				 * */
-				math::Matrix<3, 3> R;				//original rotation matrix
+				math::Matrix<3, 3> R;			//original rotation matrix
 				math::Matrix<3, 3> R_adapted;		//modified rotation matrix
 				R.set(_att.R);
 				R_adapted.set(_att.R);
@@ -758,7 +760,7 @@ FixedwingAttitudeControl::task_main()
 				_att.yawspeed = helper;
 			}
 
-			vehicle_airspeed_poll();
+			vehicle_airspeed_poll();  //使用poll这个函数，用于更新传感器的数据
 
 			vehicle_setpoint_poll();
 
@@ -773,17 +775,21 @@ FixedwingAttitudeControl::task_main()
 			vehicle_status_poll();
 
 			/* lock integrator until control is started */
+			// 锁定积分量，直到控制策略开始
 			bool lock_integrator;
-
+			// 判断此时飞行的控制状态是不是旋翼。如果是，那么就不锁定积分量
 			if (_vcontrol_mode.flag_control_attitude_enabled && !_vehicle_status.is_rotary_wing) {
 				lock_integrator = false;
-
+			//如果不是旋翼的其他飞行种类，那么就要先锁定积分
 			} else {
 				lock_integrator = true;
 			}
 
 			/* Simple handling of failsafe: deploy parachute if failsafe is on */
+			// 故障保护一个简单的接口，如果开启了故障保护，那么部署降落伞
+			// 如果给降落伞分配了一个通道用于控制它
 			if (_vcontrol_mode.flag_control_termination_enabled) {
+				//执行器框架下的第七控制通道进行初始化。
 				_actuators_airframe.control[7] = 1.0f;
 				//warnx("_actuators_airframe.control[1] = 1.0f;");
 			} else {
@@ -792,24 +798,32 @@ FixedwingAttitudeControl::task_main()
 			}
 
 			/* if we are in rotary wing mode, do nothing */
+			// 如果我们现在是旋翼模式，那么不需要做任何事情
 			if (_vehicle_status.is_rotary_wing && !_vehicle_status.is_vtol) {
 				continue;
 			}
 
 			/* default flaps to center */
+			// 默认地，将襟翼放置在中间
 			float flaps_control = 0.0f;
 
 			/* map flaps by default to manual if valid */
+			// 如果开启了襟翼功能，默认的使用手动来控制襟翼，飞控不参与控制
 			if (isfinite(_manual.flaps)) {
 				flaps_control = _manual.flaps;
 			}
 
 			/* decide if in stabilized or full manual control */
+			// 判断现在使用纯手动控制还是启动自稳控制。
+			// 下面的判断用于判断现在的飞行模式是否是使用自稳控制模式
 			if (_vcontrol_mode.flag_control_attitude_enabled) {
 				/* scale around tuning airspeed */
+				// 调整空速
 				float airspeed;
 
 				/* if airspeed is not updating, we assume the normal average speed */
+				// 如果空速没有更新，那么我们就使用正常的平均空速
+				// 这里使用了 hrt_elapsed_time 这个函数用于计时
 				if (bool nonfinite = !isfinite(_airspeed.true_airspeed_m_s) ||
 				    hrt_elapsed_time(&_airspeed.timestamp) > 1e6) {
 					airspeed = _parameters.airspeed_trim;
