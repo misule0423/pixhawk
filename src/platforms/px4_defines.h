@@ -248,4 +248,5 @@ __END_DECLS
 #define PX4_ARRAY2D(_array, _ncols, _x, _y) (_array[_x * _ncols + _y])
 
 /* wrapper for rotation matrices stored in arrays */
+ // 旋转矩阵的存储
 #define PX4_R(_array, _x, _y) PX4_ARRAY2D(_array, 3, _x, _y)

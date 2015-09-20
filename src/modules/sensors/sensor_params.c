@@ -1797,7 +1797,6 @@ PARAM_DEFINE_INT32(RC_RL1_DSM_VCC, 0); /* Relay 1 controls DSM VCC */
  */
 PARAM_DEFINE_INT32(RC_DSM_BIND, -1);
 
-
 /**
  * Scaling factor for battery voltage sensor on PX4IO.
  *
@@ -2002,6 +2001,15 @@ PARAM_DEFINE_INT32(RC_MAP_ACRO_SW, 0);
 PARAM_DEFINE_INT32(RC_MAP_OFFB_SW, 0);
 
 /**
+ * form switch channel mapping.
+ *
+ * @min 0
+ * @max 18
+ * @group Radio Switches
+ */
+PARAM_DEFINE_INT32(RC_MAP_FORM_SW, 0);
+
+/**
  * Flaps channel mapping.
  *
  * @min 0
@@ -2144,6 +2152,23 @@ PARAM_DEFINE_FLOAT(RC_AUTO_TH, 0.75f);
  *
  */
 PARAM_DEFINE_FLOAT(RC_POSCTL_TH, 0.5f);
+
+/**
+ * Threshold for selecting form mode
+ *
+ * 0-1 indicate where in the full channel range the threshold sits
+ * 		0 : min
+ * 		1 : max
+ * sign indicates polarity of comparison
+ * 		positive : true when channel>th
+ * 		negative : true when channel<th
+ *
+ * @min -1
+ * @max 1
+ * @group Radio Switches
+ *
+ */
+PARAM_DEFINE_FLOAT(RC_FORM_TH, 0.5f);
 
 /**
  * Threshold for selecting return to launch mode

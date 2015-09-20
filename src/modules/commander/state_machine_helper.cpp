@@ -71,10 +71,12 @@
 static const int ERROR = -1;
 
 // This array defines the arming state transitions. The rows are the new state, and the columns
+// 此数组定义布防状态转换。该行是新的状态，并且列
 // are the current state. Using new state and current  state you can index into the array which
 // will be true for a valid transition or false for a invalid transition. In some cases even
 // though the transition is marked as true additional checks must be made. See arming_state_transition
 // code for those checks.
+// 使用数组的方式来定义这个结构
 static const bool arming_transitions[vehicle_status_s::ARMING_STATE_MAX][vehicle_status_s::ARMING_STATE_MAX] = {
 	//                                                    INIT,  STANDBY, ARMED, ARMED_ERROR, STANDBY_ERROR, REBOOT, IN_AIR_RESTORE
 	{ /* vehicle_status_s::ARMING_STATE_INIT */           true,  true,    false, false,       true,          false,  false },
@@ -306,6 +308,7 @@ main_state_transition(struct vehicle_status_s *status, main_state_t new_main_sta
 	case vehicle_status_s::MAIN_STATE_MANUAL:
 	case vehicle_status_s::MAIN_STATE_ACRO:
 	case vehicle_status_s::MAIN_STATE_STAB:
+	case vehicle_status_s::MAIN_STATE_FORM:                                 // add something 20150914 , need fix for later
 		ret = TRANSITION_CHANGED;
 		break;
 
@@ -532,6 +535,7 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 	case vehicle_status_s::MAIN_STATE_STAB:
 	case vehicle_status_s::MAIN_STATE_ALTCTL:
 	case vehicle_status_s::MAIN_STATE_POSCTL:
+	case vehicle_status_s::MAIN_STATE_FORM:					 //add something 20150914
 		/* require RC for all manual modes */
 		if ((status->rc_signal_lost || status->rc_signal_lost_cmd) && armed && !status->condition_landed) {
 			status->failsafe = true;
@@ -567,6 +571,9 @@ bool set_nav_state(struct vehicle_status_s *status, const bool data_link_loss_en
 			case vehicle_status_s::MAIN_STATE_POSCTL:
 				status->nav_state = vehicle_status_s::NAVIGATION_STATE_POSCTL;
 				break;
+			case vehicle_status_s::MAIN_STATE_FORM:					 //add something 20150914
+				status->nav_state = vehicle_status_s::NAVIGATION_STATE_FORM;
+				break;	
 
 			default:
 				status->nav_state = vehicle_status_s::NAVIGATION_STATE_MANUAL;

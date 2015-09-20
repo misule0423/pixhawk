@@ -49,6 +49,9 @@ MODULES		+= drivers/gimbal
 MODULES		+= drivers/pwm_input
 MODULES		+= drivers/camera_trigger
 
+MODULES         += examples/px4_simple_app
+MODULES		+= examples/fixedwing_control
+
 #
 # System commands
 #

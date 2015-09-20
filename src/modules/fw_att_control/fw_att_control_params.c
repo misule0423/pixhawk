@@ -76,6 +76,20 @@ PARAM_DEFINE_FLOAT(FW_ATT_TC, 0.4f);
  * @max 1.0
  * @group FW Attitude Control
  */
+
+PARAM_DEFINE_FLOAT(JIN_TEST, 0.4f);
+
+/**
+ * Pitch rate proportional gain.
+ *
+ * JIN
+ * JIN_TEST
+ *
+ * @min 0.005
+ * @max 1.0
+ * @group FW Attitude Control
+ */
+
 PARAM_DEFINE_FLOAT(FW_PR_P, 0.08f);
 
 /**

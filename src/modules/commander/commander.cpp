@@ -541,6 +541,10 @@ bool handle_command(struct vehicle_status_s *status_local, const struct safety_s
 					/* POSCTL */
 					main_ret = main_state_transition(status_local, vehicle_status_s::MAIN_STATE_POSCTL);
 
+				} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_FORM){					// add something here
+					/* FORM */
+					main_ret = main_state_transition(status_local, vehicle_status_s::MAIN_STATE_FORM);	
+
 				} else if (custom_main_mode == PX4_CUSTOM_MAIN_MODE_AUTO) {
 					/* AUTO */
 					main_ret = main_state_transition(status_local, vehicle_status_s::MAIN_STATE_AUTO_MISSION);
@@ -891,8 +895,8 @@ int commander_thread_main(int argc, char *argv[])
 	param_t _param_eph = param_find("COM_HOME_H_T");
 	param_t _param_epv = param_find("COM_HOME_V_T");
 
-	const char *main_states_str[vehicle_status_s::MAIN_STATE_MAX];
-	main_states_str[vehicle_status_s::MAIN_STATE_MANUAL]			= "MANUAL";
+	const char *main_states_str[vehicle_status_s::MAIN_STATE_MAX];        // 地面站还是显示他自己的东西，这个只会在终端显示的
+	main_states_str[vehicle_status_s::MAIN_STATE_MANUAL]			= "MANUAL_fuck";
 	main_states_str[vehicle_status_s::MAIN_STATE_ALTCTL]			= "ALTCTL";
 	main_states_str[vehicle_status_s::MAIN_STATE_POSCTL]			= "POSCTL";
 	main_states_str[vehicle_status_s::MAIN_STATE_AUTO_MISSION]		= "AUTO_MISSION";
@@ -901,6 +905,7 @@ int commander_thread_main(int argc, char *argv[])
 	main_states_str[vehicle_status_s::MAIN_STATE_ACRO]			= "ACRO";
 	main_states_str[vehicle_status_s::MAIN_STATE_STAB]			= "STAB";
 	main_states_str[vehicle_status_s::MAIN_STATE_OFFBOARD]			= "OFFBOARD";
+	main_states_str[vehicle_status_s::MAIN_STATE_FORM]			= "FORM";
 
 	const char *arming_states_str[vehicle_status_s::ARMING_STATE_MAX];
 	arming_states_str[vehicle_status_s::ARMING_STATE_INIT]			= "INIT";
@@ -928,6 +933,7 @@ int commander_thread_main(int argc, char *argv[])
 	nav_states_str[vehicle_status_s::NAVIGATION_STATE_DESCEND]		= "DESCEND";
 	nav_states_str[vehicle_status_s::NAVIGATION_STATE_TERMINATION]		= "TERMINATION";
 	nav_states_str[vehicle_status_s::NAVIGATION_STATE_OFFBOARD]		= "OFFBOARD";
+	nav_states_str[vehicle_status_s::NAVIGATION_STATE_FORM]			= "FORM";
 
 	/* pthread for slow low prio thread */
 	pthread_t commander_low_prio_thread;
@@ -2400,6 +2406,20 @@ set_main_state_rc(struct vehicle_status_s *status_local, struct manual_control_s
 		}
 	}
 
+	/* form switch overrides main switch */
+	if (sp_man->form_switch == manual_control_setpoint_s::SWITCH_POS_ON) {
+		res = main_state_transition(status_local,vehicle_status_s::MAIN_STATE_FORM);
+
+		if (res == TRANSITION_DENIED) {
+			print_reject_mode(status_local, "FORM");
+			/* mode rejected, continue to evaluate the main system mode */
+
+		} else {
+			/* changed successfully or already in this state */
+			return res;
+		}
+	}
+
 	/* RTL switch overrides main switch */
 	if (sp_man->return_switch == manual_control_setpoint_s::SWITCH_POS_ON) {
 		res = main_state_transition(status_local,vehicle_status_s::MAIN_STATE_AUTO_RTL);
@@ -2558,6 +2578,7 @@ set_control_mode()
 		control_mode.flag_control_termination_enabled = false;
 		/* override is not ok in stabilized mode */
 		control_mode.flag_external_manual_override_ok = false;
+		control_mode.flag_control_form_enabled =true;
 		break;
 
 	case vehicle_status_s::NAVIGATION_STATE_ALTCTL:
@@ -2570,6 +2591,7 @@ set_control_mode()
 		control_mode.flag_control_position_enabled = false;
 		control_mode.flag_control_velocity_enabled = false;
 		control_mode.flag_control_termination_enabled = false;
+		control_mode.flag_control_form_enabled =true;
 		break;
 
 	case vehicle_status_s::NAVIGATION_STATE_POSCTL:
@@ -2582,6 +2604,7 @@ set_control_mode()
 		control_mode.flag_control_position_enabled = true;
 		control_mode.flag_control_velocity_enabled = true;
 		control_mode.flag_control_termination_enabled = false;
+		control_mode.flag_control_form_enabled =true;
 		break;
 
 	case vehicle_status_s::NAVIGATION_STATE_AUTO_RTL:
@@ -2602,6 +2625,7 @@ set_control_mode()
 		control_mode.flag_control_position_enabled = true;
 		control_mode.flag_control_velocity_enabled = true;
 		control_mode.flag_control_termination_enabled = false;
+		control_mode.flag_control_form_enabled =true;
 		break;
 
 	case vehicle_status_s::NAVIGATION_STATE_AUTO_LANDGPSFAIL:
@@ -2614,6 +2638,7 @@ set_control_mode()
 		control_mode.flag_control_position_enabled = false;
 		control_mode.flag_control_velocity_enabled = false;
 		control_mode.flag_control_termination_enabled = false;
+		control_mode.flag_control_form_enabled =true;
 		break;
 
 	case vehicle_status_s::NAVIGATION_STATE_ACRO:
@@ -2626,6 +2651,7 @@ set_control_mode()
 		control_mode.flag_control_position_enabled = false;
 		control_mode.flag_control_velocity_enabled = false;
 		control_mode.flag_control_termination_enabled = false;
+		control_mode.flag_control_form_enabled =true;
 		break;
 
 
@@ -2640,6 +2666,7 @@ set_control_mode()
 		control_mode.flag_control_altitude_enabled = true;
 		control_mode.flag_control_climb_rate_enabled = true;
 		control_mode.flag_control_termination_enabled = false;
+		control_mode.flag_control_form_enabled =true;
 		break;
 
 	case vehicle_status_s::NAVIGATION_STATE_DESCEND:
@@ -2653,6 +2680,7 @@ set_control_mode()
 		control_mode.flag_control_altitude_enabled = false;
 		control_mode.flag_control_climb_rate_enabled = true;
 		control_mode.flag_control_termination_enabled = false;
+		control_mode.flag_control_form_enabled =true;
 		break;
 
 	case vehicle_status_s::NAVIGATION_STATE_TERMINATION:
@@ -2666,12 +2694,14 @@ set_control_mode()
 		control_mode.flag_control_altitude_enabled = false;
 		control_mode.flag_control_climb_rate_enabled = false;
 		control_mode.flag_control_termination_enabled = true;
+		control_mode.flag_control_form_enabled =true;
 		break;
 
 	case vehicle_status_s::NAVIGATION_STATE_OFFBOARD:
 		control_mode.flag_control_manual_enabled = false;
 		control_mode.flag_control_auto_enabled = false;
 		control_mode.flag_control_offboard_enabled = true;
+		control_mode.flag_control_form_enabled =true;
 
 		/*
 		 * The control flags depend on what is ignored according to the offboard control mode topic

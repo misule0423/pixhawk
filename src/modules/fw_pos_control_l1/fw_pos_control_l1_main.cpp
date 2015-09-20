@@ -1,4 +1,4 @@
-/****************************************************************************
+ /****************************************************************************
  *
  *   Copyright (c) 2013, 2014 PX4 Development Team. All rights reserved.
  *
@@ -749,9 +749,12 @@ bool
 FixedwingPositionControl::vehicle_airspeed_poll()
 {
 	/* check if there is an airspeed update or if it timed out */
+	// 这里主要的用于检查 airspeed 的信息是否更新了。或者数据请求超时
+	// 给一个标志位的变量，用于指明这些数值是否有新的数据。
 	bool airspeed_updated;
+	// 这里有一个小细节，可以看到airspeed_updated 前面使用了取地址的符号，这样的话，就可以改变airspeed_updated的值了。
 	orb_check(_airspeed_sub, &airspeed_updated);
-
+        // 如果更新了数据，就可以执行下面的语句了
 	if (airspeed_updated) {
 		orb_copy(ORB_ID(airspeed), _airspeed_sub, &_airspeed);
 		_airspeed_valid = true;
@@ -760,6 +763,7 @@ FixedwingPositionControl::vehicle_airspeed_poll()
 	} else {
 
 		/* no airspeed updates for one second */
+		// 如果等待一分钟后都没有数据的更新，那么执行下面的语句
 		if (_airspeed_valid && (hrt_absolute_time() - _airspeed_last_valid) > 1e6) {
 			_airspeed_valid = false;
 		}
@@ -777,11 +781,14 @@ FixedwingPositionControl::vehicle_manual_control_setpoint_poll()
 	bool manual_updated;
 
 	/* Check if manual setpoint has changed */
+	// 检查位置信息是否改变了。
 	orb_check(_manual_control_sub, &manual_updated);
 
 	if (manual_updated) {
 		orb_copy(ORB_ID(manual_control_setpoint), _manual_control_sub, &_manual);
 	}
+
+	// 这里存在一个小疑问，为什么空速机信息和手动控制设置航点信息需要放回值，而其他的poll函数不需要
 
 	return manual_updated;
 }
@@ -798,7 +805,9 @@ FixedwingPositionControl::vehicle_attitude_poll()
 		orb_copy(ORB_ID(vehicle_attitude), _att_sub, &_att);
 
 		/* set rotation matrix */
-		for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++)
+		// 设置回转矩阵
+		for (int i = 0; i < 3; i++) 
+			for (int j = 0; j < 3; j++)
 				_R_nb(i, j) = PX4_R(_att.R, i, j);
 	}
 }
@@ -830,14 +839,20 @@ FixedwingPositionControl::vehicle_setpoint_poll()
 void
 FixedwingPositionControl::task_main_trampoline(int argc, char *argv[])
 {
+	// 从函数的声明上可以看出来，这个是主函数
+	// 这里的g_control 很奇怪
+	// 开始创建一个对象，用于控制飞行控制
 	l1_control::g_control = new FixedwingPositionControl();
 
 	if (l1_control::g_control == nullptr) {
+		// 输出内存不足的提示信息
 		warnx("OUT OF MEM");
 		return;
 	}
 
 	/* only returns on exit */
+	// 在退出的时候只要返回一个值即可
+	// g_control 的任务完成了，可以隐退了
 	l1_control::g_control->task_main();
 	delete l1_control::g_control;
 	l1_control::g_control = nullptr;
@@ -1065,16 +1080,19 @@ FixedwingPositionControl::control_position(const math::Vector<2> &current_positi
 	float eas2tas = 1.0f; // XXX calculate actual number based on current measurements
 
 	/* filter speed and altitude for controller */
+	// 过滤速度和高度控制器
 	math::Vector<3> accel_body(_sensor_combined.accelerometer_m_s2);
 	math::Vector<3> accel_earth = _R_nb * accel_body;
 
 	/* tell TECS to update its state, but let it know when it cannot actually control the plane */
+	// 告诉TECS更新其状态，但让它知道什么时候不能实际控制飞机
 	bool in_air_alt_control = (!_vehicle_status.condition_landed &&
 		(_control_mode.flag_control_auto_enabled ||
 		 _control_mode.flag_control_velocity_enabled ||
 		 _control_mode.flag_control_altitude_enabled));
 
 	/* update TECS filters */
+	// 更新 TECS 滤波器
 	if (!_mTecs.getEnabled()) {
 		_tecs.update_state(_global_pos.alt, _airspeed.indicated_airspeed_m_s, _R_nb,
 			accel_body, accel_earth, (_global_pos.timestamp > 0), in_air_alt_control);
@@ -1221,6 +1239,7 @@ FixedwingPositionControl::control_position(const math::Vector<2> &current_positi
 				_l1_control.navigate_heading(target_bearing, _att.yaw, ground_speed_2d);
 
 				/* limit roll motion to prevent wings from touching the ground first */
+				// 限制侧倾运动，以防止副翼接触地面
 				_att_sp.roll_body = math::constrain(_att_sp.roll_body, math::radians(-10.0f), math::radians(10.0f));
 
 				land_noreturn_horizontal = true;
@@ -1230,22 +1249,26 @@ FixedwingPositionControl::control_position(const math::Vector<2> &current_positi
 				/* normal navigation */
 				_l1_control.navigate_waypoints(prev_wp, curr_wp, current_position, ground_speed_2d);
 			}
-
+			// 是不是sp 就代表了我们需要给定的值，也就是飞控需要给出的值呢。
+			// 这里通过导航算法给出控制量
 			_att_sp.roll_body = _l1_control.nav_roll();
 			_att_sp.yaw_body = _l1_control.nav_bearing();
 
 
 			/* Vertical landing control */
+			// 飞行器的着落控制
 			//xxx: using the tecs altitude controller for slope control for now
 			/* apply minimum pitch (flare) and limit roll if close to touch down, altitude error is negative (going down) */
 			// XXX this could make a great param
-
+			// 这个着落的参数好像全部都限定死了。
 			float throttle_land = _parameters.throttle_min + (_parameters.throttle_max - _parameters.throttle_min) * 0.1f;
 			float airspeed_land = 1.3f * _parameters.airspeed_min;
+			// 设置靠近油门
 			float airspeed_approach = 1.3f * _parameters.airspeed_min;
 
 			/* Get an estimate of the terrain altitude if available, otherwise terrain_alt will be
 			 * equal to _pos_sp_triplet.current.alt */
+			// 估计一下地形
 			float terrain_alt = get_terrain_altitude_landing(_pos_sp_triplet.current.alt, _global_pos);
 
 			/* Calculate distance (to landing waypoint) and altitude of last ordinary waypoint L */
@@ -1684,6 +1707,7 @@ void
 FixedwingPositionControl::task_main()
 {
 
+	// 一波三折，最后执行算法的地方在这里
 	/*
 	 * do subscriptions
 	 */
@@ -1698,72 +1722,92 @@ FixedwingPositionControl::task_main()
 	_manual_control_sub = orb_subscribe(ORB_ID(manual_control_setpoint));
 
 	/* rate limit control mode updates to 5Hz */
+	// 限制了 control mode 的更新速率为 5HZ
 	orb_set_interval(_control_mode_sub, 200);
 	/* rate limit vehicle status updates to 5Hz */
+	// 限制了 飞行器状态更新的速率为 5HZ
 	orb_set_interval(_vehicle_status_sub, 200);
 	/* rate limit position updates to 50 Hz */
+	// 限制了位置更新的速率为50HZ
 	orb_set_interval(_global_pos_sub, 20);
 
 	/* abort on a nonzero return value from the parameter init */
+	// 当初始参数的时候如果没有返回0 那么就退出
 	if (parameters_update()) {
 		/* parameter setup went wrong, abort */
+		// 参数启动错误，无奈退出
 		warnx("aborting startup due to errors.");
 		_task_should_exit = true;
 	}
 
 	/* wakeup source(s) */
+	// 唤醒一些资源
 	struct pollfd fds[2];
 
 	/* Setup of loop */
+	// 启动循环
 	fds[0].fd = _params_sub;
 	fds[0].events = POLLIN;
 	fds[1].fd = _global_pos_sub;
 	fds[1].events = POLLIN;
 
+	// 这里就可以设置启动的标志了
 	_task_running = true;
 
 	while (!_task_should_exit) {
 
 		/* wait for up to 500ms for data */
+		// 每次进入到这里的时候，需要等待 500ms ，等待数据全部更新完
 		int pret = poll(&fds[0], (sizeof(fds) / sizeof(fds[0])), 100);
 
 		/* timed out - periodic check for _task_should_exit, etc. */
+		// 超时，周期性的检查 _task_should_exit 这个变量
 		if (pret == 0)
 			continue;
 
 		/* this is undesirable but not much we can do - might want to flag unhappy status */
+		// 这个状态是不可取的，但是我们又不能为此做些什么，现在系统处于一个不健康的状态
 		if (pret < 0) {
 			warn("poll error %d, %d", pret, errno);
 			continue;
 		}
 
 		/* check vehicle control mode for changes to publication state */
+		// 检查此时飞行控制的模式
 		vehicle_control_mode_poll();
 
 		/* check vehicle status for changes to publication state */
+		// 检查飞行的飞行状态
 		vehicle_status_poll();
 
 		/* only update parameters if they changed */
+		// 如果参数改变了，那么就更新他
 		if (fds[0].revents & POLLIN) {
 			/* read from param to clear updated flag */
+			// 读取新的参数从参数列表中，并且清除更新的标志
 			struct parameter_update_s update;
 			orb_copy(ORB_ID(parameter_update), _params_sub, &update);
 
 			/* update parameters from storage */
+			// 从存储器中跟新参数
 			parameters_update();
 		}
 
 		/* only run controller if position changed */
+		// 只用位置改变了才运行控制器
 		if (fds[1].revents & POLLIN) {
 			perf_begin(_loop_perf);
 
 			/* XXX Hack to get mavlink output going */
+			// 这里运用到了 mavlink 了
 			if (_mavlink_fd < 0) {
 				/* try to open the mavlink log device every once in a while */
+				// 每当运行到这里，都需要打开 mavlink 日志文件
 				_mavlink_fd = px4_open(MAVLINK_LOG_DEVICE, 0);
 			}
 
 			/* load local copies */
+			// 启动一个副本
 			orb_copy(ORB_ID(vehicle_global_position), _global_pos_sub, &_global_pos);
 
 			// XXX add timestamp check
@@ -1775,13 +1819,15 @@ FixedwingPositionControl::task_main()
 			vehicle_airspeed_poll();
 			vehicle_manual_control_setpoint_poll();
 			// vehicle_baro_poll();
-
+			// 这里用于到了矢量这个概念，使用的坐标系是NED
 			math::Vector<3> ground_speed(_global_pos.vel_n, _global_pos.vel_e,  _global_pos.vel_d);
+			// 这里运用到了第二个矢量，用于表示现在机体的位置。经纬度
 			math::Vector<2> current_position((float)_global_pos.lat, (float)_global_pos.lon);
 
 			/*
 			 * Attempt to control position, on success (= sensors present and not in manual mode),
 			 * publish setpoint.
+			 * 试图取控制位置，（成功的标志是，使用当前的传感器的值，并且不在手动模式下）
 			 */
 			if (control_position(current_position, ground_speed, _pos_sp_triplet)) {
 				_att_sp.timestamp = hrt_absolute_time();
@@ -1948,14 +1994,17 @@ void FixedwingPositionControl::tecs_update_pitch_throttle(float alt_sp, float v_
 int
 FixedwingPositionControl::start()
 {
+	// assert的作用是现计算表达式 expression ，如果其值为假（即为0），那么它先向stderr打印一条出错信息，然后通过调用 abort 来终止程序运行
+	// 下面语句用于检查侧向引导模块在这之前没有启动。防止重复启动
 	ASSERT(_control_task == -1);
 
 	/* start the task */
+	// 启动这个主线程
 	_control_task = px4_task_spawn_cmd("fw_pos_control_l1",
 				       SCHED_DEFAULT,
-				       SCHED_PRIORITY_MAX - 5,
+				       SCHED_PRIORITY_MAX - 5, // 优先级和 姿态控制模块的优先级是一个级别的
 				       1600,
-				       (main_t)&FixedwingPositionControl::task_main_trampoline,
+				       (main_t)&FixedwingPositionControl::task_main_trampoline, // 这才是主函数可以从这个函数下手
 				       nullptr);
 
 	if (_control_task < 0) {
@@ -1977,14 +2026,18 @@ int fw_pos_control_l1_main(int argc, char *argv[])
 		if (l1_control::g_control != nullptr)
 			errx(1, "already running");
 
+		// 这个模块使用了这个方式来启动这个线程
 		if (OK != FixedwingPositionControl::start()) {
 			err(1, "start failed");
 		}
 
 		/* avoid memory fragmentation by not exiting start handler until the task has fully started */
+		// 这个方式可以避免误启动：内存碎片的原因可以导致它误启动，要全部启动，才能启动
+		// 因为使用了while 所以可以理解为强制执行。
 		while (l1_control::g_control == nullptr || !l1_control::g_control->task_running()) {
 			usleep(50000);
 			printf(".");
+			// fflush函数可以用来清除读写缓冲区
 			fflush(stdout);
 		}
 		printf("\n");

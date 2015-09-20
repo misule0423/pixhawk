@@ -35,14 +35,18 @@
  * @file drv_hrt.c
  *
  * High-resolution timer callouts and timekeeping.
+ * 高分辨率定时器标注和报时
  *
  * This can use any general or advanced STM32 timer.
- *
+ * 这可使用任何通用或高级STM32定时器。
+ * 
  * Note that really, this could use systick too, but that's
  * monopolised by NuttX and stealing it would just be awkward.
- *
+ * 需要注意的是：他还是使用了系统定时器，但是这被 Nuttx 所垄断，如果窃取的话，会很尴尬
+ * 
  * We don't use the NuttX STM32 driver per se; rather, we
  * claim the timer and then drive it directly.
+ * 我们不使用本身的NuttX STM32驱动程序;相反，我们声明计时器，然后直接驱动它。
  */
 
 #include <px4_config.h>
@@ -684,6 +688,7 @@ hrt_absolute_time(void)
 
 /**
  * Convert a timespec to absolute time
+ * 将标准时间转换为绝对时间
  */
 hrt_abstime
 ts_to_abstime(struct timespec *ts)
@@ -698,6 +703,7 @@ ts_to_abstime(struct timespec *ts)
 
 /**
  * Convert absolute time to a timespec.
+ * 将绝对时间转换为标准时间
  */
 void
 abstime_to_ts(struct timespec *ts, hrt_abstime abstime)
@@ -709,6 +715,7 @@ abstime_to_ts(struct timespec *ts, hrt_abstime abstime)
 
 /**
  * Compare a time value with the current time.
+ * 与当前的时间进行比较。用于计算时间差
  */
 hrt_abstime
 hrt_elapsed_time(const volatile hrt_abstime *then)
@@ -724,6 +731,7 @@ hrt_elapsed_time(const volatile hrt_abstime *then)
 
 /**
  * Store the absolute time in an interrupt-safe fashion
+ * 将绝对时间存储在 interrupt-safe 中
  */
 hrt_abstime
 hrt_store_absolute_time(volatile hrt_abstime *now)
@@ -739,6 +747,7 @@ hrt_store_absolute_time(volatile hrt_abstime *now)
 
 /**
  * Initalise the high-resolution timing module.
+ * 初始化高分辨率定时模块
  */
 void
 hrt_init(void)

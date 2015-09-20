@@ -34,7 +34,7 @@
 /**
  * @file ecl_pitch_controller.cpp
  * Implementation of a simple orthogonal pitch PID controller.
- *
+ * 一个简单的垂直间距PID控制器的实现
  * Authors and acknowledgements in header.
  */
 
@@ -47,13 +47,14 @@
 #include <mathlib/mathlib.h>
 #include <systemlib/err.h>
 
+// 这还是使用了 c ++ 语言
 ECL_PitchController::ECL_PitchController() :
 	ECL_Controller("pitch"),
 	_max_rate_neg(0.0f),
 	_roll_ff(0.0f)
 {
 }
-
+// 析构函数
 ECL_PitchController::~ECL_PitchController()
 {
 }
@@ -62,19 +63,23 @@ float ECL_PitchController::control_attitude(const struct ECL_ControlData &ctl_da
 {
 
 	/* Do not calculate control signal with bad inputs */
+	// 不计算与坏的输入控制信号
 	if (!(isfinite(ctl_data.pitch_setpoint) &&
 	      isfinite(ctl_data.roll) &&
 	      isfinite(ctl_data.pitch) &&
 	      isfinite(ctl_data.airspeed))) {
+	      	// 如果这些值不合理，那么就不进行控制
 		perf_count(_nonfinite_input_perf);
 		warnx("not controlling pitch");
 		return _rate_setpoint;
 	}
 
 	/* Calculate the error */
+	// 校准偏差量
 	float pitch_error = ctl_data.pitch_setpoint - ctl_data.pitch;
 
-	/*  Apply P controller: rate setpoint from current error and time constant */
+	/*  Apply P controller: rate setpoint from current error and time CONSTANTS_ONE_G */
+	// 应用 P 值控制器
 	_rate_setpoint =  pitch_error / _tc;
 
 	/* limit the rate */
@@ -107,11 +112,13 @@ float ECL_PitchController::control_bodyrate(const struct ECL_ControlData &ctl_da
 	}
 
 	/* get the usual dt estimate */
+	// 得到 DT 的估计
 	uint64_t dt_micros = ecl_elapsed_time(&_last_run);
 	_last_run = ecl_absolute_time();
 	float dt = (float)dt_micros * 1e-6f;
 
 	/* lock integral for long intervals */
+	// 积分锁定长的时间间隔
 	bool lock_integrator = ctl_data.lock_integrator;
 
 	if (dt_micros > 500000) {
@@ -119,11 +126,13 @@ float ECL_PitchController::control_bodyrate(const struct ECL_ControlData &ctl_da
 	}
 
 	/* Transform setpoint to body angular rates (jacobian) */
+	// 变换设定身体的角速率
 	_bodyrate_setpoint = cosf(ctl_data.roll) * _rate_setpoint +
 			     cosf(ctl_data.pitch) * sinf(ctl_data.roll) * ctl_data.yaw_rate_setpoint;
 
 	/* apply turning offset to desired bodyrate setpoint*/
 	/* flying inverted (wings upside down)*/
+	//  飞倒（翅膀倒挂）
 	bool inverted = false;
 	float constrained_roll;
 	/* roll is used as feedforward term and inverted flight needs to be considered */

@@ -117,21 +117,21 @@ public:
 	bool		task_running() { return _task_running; }
 
 private:
+	// 这里有一个小的规律，私有的成员的命名都是以_ 开头的
+	bool		_task_should_exit;		/**< if true, attitude control task should exit 如果为真，那么姿态控制任务应该存在*/
+	bool		_task_running;			/**< if true, task is running in its mainloop 如果为真，任务在它自己的主循环中运行*/
+	int		_control_task;			/**< task handle 任务的句柄*/
 
-	bool		_task_should_exit;		/**< if true, attitude control task should exit */
-	bool		_task_running;			/**< if true, task is running in its mainloop */
-	int		_control_task;			/**< task handle */
-
-	int		_att_sub;			/**< vehicle attitude subscription */
-	int		_accel_sub;			/**< accelerometer subscription */
-	int		_att_sp_sub;			/**< vehicle attitude setpoint */
-	int		_attitude_sub;			/**< raw rc channels data subscription */
-	int		_airspeed_sub;			/**< airspeed subscription */
-	int		_vcontrol_mode_sub;		/**< vehicle status subscription */
-	int 		_params_sub;			/**< notification of parameter updates */
-	int 		_manual_sub;			/**< notification of manual control updates */
-	int		_global_pos_sub;		/**< global position subscription */
-	int		_vehicle_status_sub;		/**< vehicle status subscription */
+	int		_att_sub;			/**< vehicle attitude subscription 订阅的姿态信息*/
+	int		_accel_sub;			/**< accelerometer subscription 订阅的加速度信息*/
+	int		_att_sp_sub;			/**< vehicle attitude setpoint 订阅的 */
+	int		_attitude_sub;			/**< raw rc channels data subscription 原始RC通道的数据订阅，这名字取的好怪 */
+	int		_airspeed_sub;			/**< airspeed subscription 空速机信息订阅*/
+	int		_vcontrol_mode_sub;		/**< vehicle status subscription 飞机的飞行状态信息订阅*/
+	int 		_params_sub;			/**< notification of parameter updates 参数更新通知 */
+	int 		_manual_sub;			/**< notification of manual control updates 手动模式输入数据更新*/
+	int		_global_pos_sub;		/**< global position subscription 全球位置信息订阅*/
+	int		_vehicle_status_sub;		/**< vehicle status subscription 飞行的状态信息订阅 */
 
 	orb_advert_t	_rate_sp_pub;			/**< rate setpoint publication */
 	orb_advert_t	_attitude_sp_pub;		/**< attitude setpoint point */
@@ -141,10 +141,10 @@ private:
 	orb_id_t _rates_sp_id;	// pointer to correct rates setpoint uORB metadata structure
 	orb_id_t _actuators_id;	// pointer to correct actuator controls0 uORB metadata structure
 
-	struct vehicle_attitude_s			_att;			/**< vehicle attitude */
-	struct accel_report				_accel;			/**< body frame accelerations */
+	struct vehicle_attitude_s			_att;			/**< vehicle attitude 飞行器姿态结构体*/
+	struct accel_report				_accel;			/**< body frame accelerations 机体的加速度*/
 	struct vehicle_attitude_setpoint_s		_att_sp;		/**< vehicle attitude setpoint */
-	struct vehicle_rates_setpoint_s			_rates_sp;	/* attitude rates setpoint */
+	struct vehicle_rates_setpoint_s			_rates_sp;	        /* attitude rates setpoint */
 	struct manual_control_setpoint_s		_manual;		/**< r/c channel data */
 	struct airspeed_s				_airspeed;		/**< airspeed */
 	struct vehicle_control_mode_s			_vcontrol_mode;		/**< vehicle control mode */
@@ -153,12 +153,12 @@ private:
 	struct vehicle_global_position_s		_global_pos;		/**< global position */
 	struct vehicle_status_s				_vehicle_status;	/**< vehicle status */
 
-	perf_counter_t	_loop_perf;			/**< loop performance counter */
-	perf_counter_t	_nonfinite_input_perf;		/**< performance counter for non finite input */
-	perf_counter_t	_nonfinite_output_perf;		/**< performance counter for non finite output */
+	perf_counter_t	_loop_perf;			/**< loop performance counter  循环性能计数器*/
+	perf_counter_t	_nonfinite_input_perf;		/**< performance counter for non finite input 对于非有限的输入性能计数器*/
+	perf_counter_t	_nonfinite_output_perf;		/**< performance counter for non finite output 对于非有限的输出性能计数器*/
 
-	bool		_setpoint_valid;		/**< flag if the position control setpoint is valid */
-	bool		_debug;				/**< if set to true, print debug output */
+	bool		_setpoint_valid;		/**< flag if the position control setpoint is valid 标志，如果位置控制有效的*/
+	bool		_debug;				/**< if set to true, print debug output  调试信息的开关，如果打开则显示调试信息*/
 
 	struct {
 		float tconst;
@@ -196,7 +196,7 @@ private:
 		float man_roll_max;				/**< Max Roll in rad */
 		float man_pitch_max;			/**< Max Pitch in rad */
 
-		int vtol_type;					/**< VTOL type: 0 = tailsitter, 1 = tiltrotor */
+		int vtol_type;					/**< VTOL type: 0 = tailsitter , 1 = tiltrotor 倾斜旋翼*/
 
 	}		_parameters;			/**< local copies of interesting parameters */
 
@@ -239,7 +239,7 @@ private:
 
 	}		_parameter_handles;		/**< handles for interesting parameters */
 
-
+	// PID 控制器在这里呢。。。
 	ECL_RollController				_roll_ctrl;
 	ECL_PitchController				_pitch_ctrl;
 	ECL_YawController				_yaw_ctrl;
@@ -322,7 +322,7 @@ FixedwingAttitudeControl::FixedwingAttitudeControl() :
 	_task_running(false),
 	_control_task(-1),
 
-/* subscriptions */
+/* subscriptions 订阅的信息*/
 	_att_sub(-1),
 	_accel_sub(-1),
 	_airspeed_sub(-1),
@@ -332,7 +332,7 @@ FixedwingAttitudeControl::FixedwingAttitudeControl() :
 	_global_pos_sub(-1),
 	_vehicle_status_sub(-1),
 
-/* publications */
+/* publications 需要发布的信息 */
 	_rate_sp_pub(nullptr),
 	_attitude_sp_pub(nullptr),
 	_actuators_0_pub(nullptr),
@@ -341,7 +341,7 @@ FixedwingAttitudeControl::FixedwingAttitudeControl() :
 	_rates_sp_id(0),
 	_actuators_id(0),
 
-/* performance counters */
+/* performance counters 性能计数器 */
 	_loop_perf(perf_alloc(PC_ELAPSED, "fw att control")),
 	_nonfinite_input_perf(perf_alloc(PC_COUNT, "fw att control nonfinite input")),
 	_nonfinite_output_perf(perf_alloc(PC_COUNT, "fw att control nonfinite output")),
@@ -349,7 +349,7 @@ FixedwingAttitudeControl::FixedwingAttitudeControl() :
 	_setpoint_valid(false),
 	_debug(false)
 {
-	/* safely initialize structs */
+	/* safely initialize structs 为了安全，需要初始化哥哥结构体*/
 	_att = {};
 	_accel = {};
 	_att_sp = {};
@@ -401,7 +401,7 @@ FixedwingAttitudeControl::FixedwingAttitudeControl() :
 
 	_parameter_handles.vtol_type = param_find("VT_TYPE");
 
-	/* fetch initial parameter values */
+	/* fetch initial parameter values 去获取初始值*/
 	parameters_update();
 }
 
@@ -409,24 +409,24 @@ FixedwingAttitudeControl::~FixedwingAttitudeControl()
 {
 	if (_control_task != -1) {
 
-		/* task wakes up every 100ms or so at the longest */
+		/* task wakes up every 100ms or so at the longest 任务在每100ms更新一次，或者更长时间 */
 		_task_should_exit = true;
 
-		/* wait for a second for the task to quit at our request */
+		/* wait for a second for the task to quit at our request 再次确定系统发出了关闭此线程的信号*/
 		unsigned i = 0;
 
 		do {
-			/* wait 20ms */
+			/* wait 20ms 等待20ms*/
 			usleep(20000);
 
-			/* if we have given up, kill it */
+			/* if we have given up, kill it 实在是无法挽救，那么只能杀死这个线程了*/
 			if (++i > 50) {
 				task_delete(_control_task);
 				break;
 			}
 		} while (_control_task != -1);
 	}
-
+	// 释放表示性能的指针
 	perf_free(_loop_perf);
 	perf_free(_nonfinite_input_perf);
 	perf_free(_nonfinite_output_perf);
@@ -480,6 +480,7 @@ FixedwingAttitudeControl::parameters_update()
 	param_get(_parameter_handles.vtol_type, &_parameters.vtol_type);
 
 	/* pitch control parameters */
+	// pith 各个的参数写入
 	_pitch_ctrl.set_time_constant(_parameters.tconst);
 	_pitch_ctrl.set_k_p(_parameters.p_p);
 	_pitch_ctrl.set_k_i(_parameters.p_i);
@@ -489,6 +490,7 @@ FixedwingAttitudeControl::parameters_update()
 	_pitch_ctrl.set_max_rate_neg(math::radians(_parameters.p_rmax_neg));
 
 	/* roll control parameters */
+	// roll 各个参数的写入
 	_roll_ctrl.set_time_constant(_parameters.tconst);
 	_roll_ctrl.set_k_p(_parameters.r_p);
 	_roll_ctrl.set_k_i(_parameters.r_i);
@@ -497,6 +499,7 @@ FixedwingAttitudeControl::parameters_update()
 	_roll_ctrl.set_max_rate(math::radians(_parameters.r_rmax));
 
 	/* yaw control parameters */
+	// yaw 各个参数的写入
 	_yaw_ctrl.set_k_p(_parameters.y_p);
 	_yaw_ctrl.set_k_i(_parameters.y_i);
 	_yaw_ctrl.set_k_ff(_parameters.y_ff);
@@ -508,12 +511,14 @@ FixedwingAttitudeControl::parameters_update()
 	return OK;
 }
 
+// 每个信息的获取都需要进行这些处理，为了防止信息更新信息过程中出现的问题
 void
 FixedwingAttitudeControl::vehicle_control_mode_poll()
 {
 	bool vcontrol_mode_updated;
 
 	/* Check if vehicle control mode has changed */
+	// 检查数据是否有更新，用于减少不必要的开销
 	orb_check(_vcontrol_mode_sub, &vcontrol_mode_updated);
 
 	if (vcontrol_mode_updated) {
@@ -595,6 +600,7 @@ FixedwingAttitudeControl::vehicle_status_poll()
 	if (vehicle_status_updated) {
 		orb_copy(ORB_ID(vehicle_status), _vehicle_status_sub, &_vehicle_status);
 		/* set correct uORB ID, depending on if vehicle is VTOL or not */
+		// 获取目前所使用对象代理的ID号，这需要取决于是否选择了垂直起降模式
 		if (!_rates_sp_id) {
 			if (_vehicle_status.is_vtol) {
 				_rates_sp_id = ORB_ID(fw_virtual_rates_setpoint);
@@ -617,7 +623,7 @@ void
 FixedwingAttitudeControl::task_main()
 {
 	/*
-	 * do subscriptions
+	 * do subscriptions 这里好像是为了做一个初始化的工作
 	 */
 	_att_sp_sub = orb_subscribe(ORB_ID(vehicle_attitude_setpoint));
 	_att_sub = orb_subscribe(ORB_ID(vehicle_attitude));
@@ -630,6 +636,7 @@ FixedwingAttitudeControl::task_main()
 	_vehicle_status_sub = orb_subscribe(ORB_ID(vehicle_status));
 
 	/* rate limit vehicle status updates to 5Hz */
+	// 限制了飞行器状态更新的时间为 5hz
 	orb_set_interval(_vcontrol_mode_sub, 200);
 	/* do not limit the attitude updates in order to minimize latency.
 	 * actuator outputs are still limited by the individual drivers
@@ -638,6 +645,7 @@ FixedwingAttitudeControl::task_main()
 	parameters_update();
 
 	/* get an initial update for all sensor and status data */
+	// 为所有的传感器获得初始化的数据
 	vehicle_airspeed_poll();
 	vehicle_setpoint_poll();
 	vehicle_accel_poll();
@@ -826,12 +834,14 @@ FixedwingAttitudeControl::task_main()
 				// 这里使用了 hrt_elapsed_time 这个函数用于计时
 				if (bool nonfinite = !isfinite(_airspeed.true_airspeed_m_s) ||
 				    hrt_elapsed_time(&_airspeed.timestamp) > 1e6) {
+				    	//那么此时的空速就采用你所设置的空速指标。
 					airspeed = _parameters.airspeed_trim;
 					if (nonfinite) {
 						perf_count(_nonfinite_input_perf);
 					}
 				} else {
 					/* prevent numerical drama by requiring 0.5 m/s minimal speed */
+					// 为了防止数值很离谱，在此限定了最小的速度不得低于0.5m/s
 					airspeed = math::max(0.5f, _airspeed.true_airspeed_m_s);
 				}
 
@@ -842,9 +852,10 @@ FixedwingAttitudeControl::task_main()
 				 *
 				 * Forcing the scaling to this value allows reasonable handheld tests.
 				 */
-
+				 // 这里，对空速机进行一定的缩放，因为过小的速度（接近失速）对我们来说是没有任何意义的，我们以正常飞行员的大小来正常缩放空速的大小
 				float airspeed_scaling = _parameters.airspeed_trim / ((airspeed < _parameters.airspeed_min) ? _parameters.airspeed_min : airspeed);
 
+				// 这里只对飞机的 roll 和 pitch 经行了漂移量的修正
 				float roll_sp = _parameters.rollsp_offset_rad;
 				float pitch_sp = _parameters.pitchsp_offset_rad;
 				float yaw_manual = 0.0f;
@@ -855,14 +866,23 @@ FixedwingAttitudeControl::task_main()
 				 * - manual control is disabled (another app may send the setpoint, but it should
 				 *   for sure not be set from the remote control values)
 				 */
+				// 读取飞机飞行姿态的点通过 uorb 这个对象去读取下面两种模式之一
+				// - 速度控制或者是位置控制（位置控制默认运行）
+				// - 手动控制（其他的app也可能设置这个点，但是他们应该确定自己设置的点不是没有控制的值）
+				// 第一种情况： 飞行模式为自动模式，而不是手动模式
 				if (_vcontrol_mode.flag_control_auto_enabled ||
 						!_vcontrol_mode.flag_control_manual_enabled) {
 					/* read in attitude setpoint from attitude setpoint uorb topic */
+					// 首先需要从姿态信息更新模块中读取姿态信息
+					// roll 现在的偏移量是 目前机体便宜量加上装机时的偏移量的结合。
 					roll_sp = _att_sp.roll_body + _parameters.rollsp_offset_rad;
+					// pitch 方向同上
 					pitch_sp = _att_sp.pitch_body + _parameters.pitchsp_offset_rad;
+					// 油门量就直接读取现在的油门量
 					throttle_sp = _att_sp.thrust;
 
 					/* reset integrals where needed */
+					// 这里需要重置积分量
 					if (_att_sp.roll_reset_integral) {
 						_roll_ctrl.reset_integrator();
 					}
@@ -872,22 +892,27 @@ FixedwingAttitudeControl::task_main()
 					if (_att_sp.yaw_reset_integral) {
 						_yaw_ctrl.reset_integrator();
 					}
+				//如果此时飞机的控制模式是基于速度的控制模式
 				} else if (_vcontrol_mode.flag_control_velocity_enabled) {
 
 					/* the pilot does not want to change direction,
 					 * take straight attitude setpoint from position controller
 					 */
+					// 飞行员不想改变方向，通过位置控制器来平直向前飞行
+					// 这里补充一个小知识点：fabsf() 函数是用于取浮点数的绝对值
+					// 这个模式人工是可以参与控制的，这里对人工遥控器信号进行一个小小的滤波
 					if (fabsf(_manual.y) < 0.01f && fabsf(_att.roll) < 0.2f) {
 						roll_sp = _att_sp.roll_body + _parameters.rollsp_offset_rad;
 					} else {
 						roll_sp = (_manual.y * _parameters.man_roll_max)
 								+ _parameters.rollsp_offset_rad;
 					}
-
+					// 但是对pitch方向没有进行一个滤波
 					pitch_sp = _att_sp.pitch_body + _parameters.pitchsp_offset_rad;
 					throttle_sp = _att_sp.thrust;
 
 					/* reset integrals where needed */
+					// 同理这里对积分量进行了一个初始化
 					if (_att_sp.roll_reset_integral) {
 						_roll_ctrl.reset_integrator();
 					}
@@ -902,11 +927,14 @@ FixedwingAttitudeControl::task_main()
  					/*
 					 * Velocity should be controlled and manual is enabled.
 					*/
+					// 这里速度将是可控的，同时人工是参与控制的
+					// 这里没有对遥控器进行滤波
 					roll_sp = (_manual.y * _parameters.man_roll_max) + _parameters.rollsp_offset_rad;
 					pitch_sp = _att_sp.pitch_body + _parameters.pitchsp_offset_rad;
 					throttle_sp = _att_sp.thrust;
 
 					/* reset integrals where needed */
+					// 同理，初始化积分量
 					if (_att_sp.roll_reset_integral) {
 						_roll_ctrl.reset_integrator();
 					}
@@ -932,6 +960,7 @@ FixedwingAttitudeControl::task_main()
 					roll_sp = (_manual.y * _parameters.man_roll_max) + _parameters.rollsp_offset_rad;
 					pitch_sp = -(_manual.x * _parameters.man_pitch_max) + _parameters.pitchsp_offset_rad;
 					/* allow manual control of rudder deflection */
+					// 允许手动控制方向舵进行一个偏转
 					yaw_manual = _manual.r;
 					throttle_sp = _manual.z;
 
@@ -940,6 +969,7 @@ FixedwingAttitudeControl::task_main()
 					 * emit the manual setpoint here to allow attitude controller tuning
 					 * in attitude control mode.
 					 */
+					// 现在填写结构体中的数值，这些值上面根据不同的模式进行微调的数值。
 					struct vehicle_attitude_setpoint_s att_sp;
 					att_sp.timestamp = hrt_absolute_time();
 					att_sp.roll_body = roll_sp;
@@ -959,8 +989,10 @@ FixedwingAttitudeControl::task_main()
 						}
 					}
 				}
-
+				// 从这里开始正式的控制了
+				// 如果飞行器在地面上，那么就要重新设置积分器
 				/* If the aircraft is on ground reset the integrators */
+
 				if (_vehicle_status.condition_landed || _vehicle_status.is_rotary_wing) {
 					_roll_ctrl.reset_integrator();
 					_pitch_ctrl.reset_integrator();
@@ -968,6 +1000,8 @@ FixedwingAttitudeControl::task_main()
 				}
 
 				/* Prepare speed_body_u and speed_body_w */
+				// 对参数进行一个赋值
+				// 这里采用是一个机体坐标系 NED 坐标系
 				float speed_body_u = 0.0f;
 				float speed_body_v = 0.0f;
 				float speed_body_w = 0.0f;
@@ -982,6 +1016,7 @@ FixedwingAttitudeControl::task_main()
 				}
 
 				/* Prepare data for attitude controllers */
+				// 准备姿态控制的数据
 				struct ECL_ControlData control_input = {};
 				control_input.roll = _att.roll;
 				control_input.pitch = _att.pitch;
@@ -1004,9 +1039,11 @@ FixedwingAttitudeControl::task_main()
 				control_input.lock_integrator = lock_integrator;
 
 				/* Run attitude controllers */
+				// 允许姿态控制器
 				if (isfinite(roll_sp) && isfinite(pitch_sp)) {
 					_roll_ctrl.control_attitude(control_input);
 					_pitch_ctrl.control_attitude(control_input);
+					// yaw 方向是最后控制的，应该他的控制是基于roll 和 pitch 的输出的
 					_yaw_ctrl.control_attitude(control_input); //runs last, because is depending on output of roll and pitch attitude
 
 					/* Update input data for rate controllers */
@@ -1015,6 +1052,8 @@ FixedwingAttitudeControl::task_main()
 					control_input.yaw_rate_setpoint = _yaw_ctrl.get_desired_rate();
 
 					/* Run attitude RATE controllers which need the desired attitudes from above, add trim */
+					// 运行速率姿态控制需要大概的期望的姿态和修正量
+					// isfinite() 此函数用于判断一个数值是否是有限的一个值
 					float roll_u = _roll_ctrl.control_bodyrate(control_input);
 					_actuators.control[0] = (isfinite(roll_u)) ? roll_u + _parameters.trim_roll : _parameters.trim_roll;
 					if (!isfinite(roll_u)) {
@@ -1051,6 +1090,7 @@ FixedwingAttitudeControl::task_main()
 					_actuators.control[2] = (isfinite(yaw_u)) ? yaw_u + _parameters.trim_yaw : _parameters.trim_yaw;
 
 					/* add in manual rudder control */
+					// 加入手动方向舵控制
 					_actuators.control[2] += yaw_manual;
 					if (!isfinite(yaw_u)) {
 						_yaw_ctrl.reset_integrator();
@@ -1082,6 +1122,8 @@ FixedwingAttitudeControl::task_main()
 				 * Lazily publish the rate setpoint (for analysis, the actuators are published below)
 				 * only once available
 				 */
+				// 发布速率的控制值
+				// 将最后运算的结果放回回来，之后
 				_rates_sp.roll = _roll_ctrl.get_desired_rate();
 				_rates_sp.pitch = _pitch_ctrl.get_desired_rate();
 				_rates_sp.yaw = _yaw_ctrl.get_desired_rate();
@@ -1098,8 +1140,10 @@ FixedwingAttitudeControl::task_main()
 
 			} else {
 				/* manual/direct control */
+				// 不使用姿态控制算法，直接输出控制量即可
+				// 他们通过这个数组来对飞机经行飞行控制
 				_actuators.control[actuator_controls_s::INDEX_ROLL] = _manual.y + _parameters.trim_roll;
-				_actuators.control[actuator_controls_s::INDEX_PITCH] = -_manual.x + _parameters.trim_pitch;
+				_actuators.control[actuator_controls_s::INDEX_PITCH] = -_manual.x + _parameters.trim_pitch; // 
 				_actuators.control[actuator_controls_s::INDEX_YAW] = _manual.r + _parameters.trim_yaw;
 				_actuators.control[actuator_controls_s::INDEX_THROTTLE] = _manual.z;
 			}
@@ -1157,7 +1201,7 @@ FixedwingAttitudeControl::start()
 	/* start the task */
 	_control_task = px4_task_spawn_cmd("fw_att_control",
 				       SCHED_DEFAULT,
-				       SCHED_PRIORITY_MAX - 5,
+				       SCHED_PRIORITY_MAX - 5, //这个优先级算比较高级的
 				       1600,
 				       (main_t)&FixedwingAttitudeControl::task_main_trampoline,
 				       nullptr);

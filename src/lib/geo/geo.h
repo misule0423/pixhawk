@@ -35,7 +35,7 @@
  * @file geo.h
  *
  * Definition of geo / math functions to perform geodesic calculations
- *
+ * 这部分代码用于大地的测算
  * @author Thomas Gubler <thomasgubler@student.ethz.ch>
  * @author Julian Oes <joes@student.ethz.ch>
  * @author Lorenz Meier <lm@inf.ethz.ch>

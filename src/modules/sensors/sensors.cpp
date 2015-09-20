@@ -285,6 +285,7 @@ private:
 		int rc_map_loiter_sw;
 		int rc_map_acro_sw;
 		int rc_map_offboard_sw;
+		int rc_map_form_sw;                               // add someting here 0915
 
 		int rc_map_flaps;
 
@@ -304,6 +305,7 @@ private:
 		float rc_loiter_th;
 		float rc_acro_th;
 		float rc_offboard_th;
+		float rc_form_th;			// add something here
 		bool rc_assist_inv;
 		bool rc_auto_inv;
 		bool rc_posctl_inv;
@@ -311,6 +313,7 @@ private:
 		bool rc_loiter_inv;
 		bool rc_acro_inv;
 		bool rc_offboard_inv;
+		bool rc_form_inv;			// add something here
 
 		float battery_voltage_scaling;
 		float battery_current_scaling;
@@ -341,6 +344,7 @@ private:
 		param_t rc_map_loiter_sw;
 		param_t rc_map_acro_sw;
 		param_t rc_map_offboard_sw;
+		param_t rc_map_form_sw;
 
 		param_t rc_map_flaps;
 
@@ -364,6 +368,7 @@ private:
 		param_t rc_loiter_th;
 		param_t rc_acro_th;
 		param_t rc_offboard_th;
+		param_t rc_form_th;
 
 		param_t battery_voltage_scaling;
 		param_t battery_current_scaling;
@@ -595,6 +600,7 @@ Sensors::Sensors() :
 	_parameter_handles.rc_map_loiter_sw = param_find("RC_MAP_LOITER_SW");
 	_parameter_handles.rc_map_acro_sw = param_find("RC_MAP_ACRO_SW");
 	_parameter_handles.rc_map_offboard_sw = param_find("RC_MAP_OFFB_SW");
+	_parameter_handles.rc_map_form_sw = param_find("RC_MAP_FORM_SW"); 			// ADD SOMTHING HERE 9015
 
 	_parameter_handles.rc_map_aux1 = param_find("RC_MAP_AUX1");
 	_parameter_handles.rc_map_aux2 = param_find("RC_MAP_AUX2");
@@ -618,6 +624,7 @@ Sensors::Sensors() :
 	_parameter_handles.rc_loiter_th = param_find("RC_LOITER_TH");
 	_parameter_handles.rc_acro_th = param_find("RC_ACRO_TH");
 	_parameter_handles.rc_offboard_th = param_find("RC_OFFB_TH");
+	_parameter_handles.rc_form_th = param_find("RC_FORM_TH");
 
 	/* Differential pressure offset */
 	_parameter_handles.diff_pres_offset_pa = param_find("SENS_DPRES_OFF");
@@ -761,6 +768,10 @@ Sensors::parameters_update()
 		warnx("%s", paramerr);
 	}
 
+	if (param_get(_parameter_handles.rc_map_form_sw, &(_parameters.rc_map_form_sw)) != OK) {       // add something here 0914
+		warnx("%s", paramerr);
+	}
+
 	if (param_get(_parameter_handles.rc_map_loiter_sw, &(_parameters.rc_map_loiter_sw)) != OK) {
 		warnx("%s", paramerr);
 	}
@@ -794,10 +805,13 @@ Sensors::parameters_update()
 	param_get(_parameter_handles.rc_auto_th, &(_parameters.rc_auto_th));
 	_parameters.rc_auto_inv = (_parameters.rc_auto_th < 0);
 	_parameters.rc_auto_th = fabs(_parameters.rc_auto_th);
-	param_get(_parameter_handles.rc_posctl_th, &(_parameters.rc_posctl_th));
+	param_get(_parameter_handles.rc_posctl_th, &(_parameters.rc_posctl_th));       
 	_parameters.rc_posctl_inv = (_parameters.rc_posctl_th < 0);
 	_parameters.rc_posctl_th = fabs(_parameters.rc_posctl_th);
-	param_get(_parameter_handles.rc_return_th, &(_parameters.rc_return_th));
+	param_get(_parameter_handles.rc_form_th, &(_parameters.rc_form_th));      // add somthing here 0915
+	_parameters.rc_form_inv = (_parameters.rc_form_th < 0);
+	_parameters.rc_form_th = fabs(_parameters.rc_form_th);
+	param_get(_parameter_handles.rc_return_th, &(_parameters.rc_return_th));       
 	_parameters.rc_return_inv = (_parameters.rc_return_th < 0);
 	_parameters.rc_return_th = fabs(_parameters.rc_return_th);
 	param_get(_parameter_handles.rc_loiter_th, &(_parameters.rc_loiter_th));
@@ -819,6 +833,7 @@ Sensors::parameters_update()
 	_rc.function[rc_channels_s::RC_CHANNELS_FUNCTION_MODE] = _parameters.rc_map_mode_sw - 1;
 	_rc.function[rc_channels_s::RC_CHANNELS_FUNCTION_RETURN] = _parameters.rc_map_return_sw - 1;
 	_rc.function[rc_channels_s::RC_CHANNELS_FUNCTION_POSCTL] = _parameters.rc_map_posctl_sw - 1;
+	_rc.function[rc_channels_s::RC_CHANNELS_FUNCTION_FORM] = _parameters.rc_map_form_sw - 1;
 	_rc.function[rc_channels_s::RC_CHANNELS_FUNCTION_LOITER] = _parameters.rc_map_loiter_sw - 1;
 	_rc.function[rc_channels_s::RC_CHANNELS_FUNCTION_ACRO] = _parameters.rc_map_acro_sw - 1;
 	_rc.function[rc_channels_s::RC_CHANNELS_FUNCTION_OFFBOARD] = _parameters.rc_map_offboard_sw - 1;
@@ -2047,6 +2062,7 @@ Sensors::rc_poll()
 			/* mode switches */
 			manual.mode_switch = get_rc_sw3pos_position (rc_channels_s::RC_CHANNELS_FUNCTION_MODE, _parameters.rc_auto_th, _parameters.rc_auto_inv, _parameters.rc_assist_th, _parameters.rc_assist_inv);
 			manual.posctl_switch = get_rc_sw2pos_position (rc_channels_s::RC_CHANNELS_FUNCTION_POSCTL, _parameters.rc_posctl_th, _parameters.rc_posctl_inv);
+			manual.posctl_switch = get_rc_sw2pos_position (rc_channels_s::RC_CHANNELS_FUNCTION_FORM, _parameters.rc_form_th, _parameters.rc_form_inv);
 			manual.return_switch = get_rc_sw2pos_position (rc_channels_s::RC_CHANNELS_FUNCTION_RETURN, _parameters.rc_return_th, _parameters.rc_return_inv);
 			manual.loiter_switch = get_rc_sw2pos_position (rc_channels_s::RC_CHANNELS_FUNCTION_LOITER, _parameters.rc_loiter_th, _parameters.rc_loiter_inv);
 			manual.acro_switch = get_rc_sw2pos_position (rc_channels_s::RC_CHANNELS_FUNCTION_ACRO, _parameters.rc_acro_th, _parameters.rc_acro_inv);

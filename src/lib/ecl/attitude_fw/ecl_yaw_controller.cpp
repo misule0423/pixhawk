@@ -48,6 +48,7 @@
 #include <ecl/ecl.h>
 
 ECL_YawController::ECL_YawController() :
+	// 构造函数，这一句的作用为，给这个控制模块写一个名字，用于以后的区分
 	ECL_Controller("yaw"),
 	_coordinated_min_speed(1.0f),
 	_coordinated_method(0)

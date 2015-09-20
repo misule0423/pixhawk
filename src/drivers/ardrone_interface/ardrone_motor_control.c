@@ -34,7 +34,9 @@
 
 /**
  * @file ardrone_motor_control.c
+ * 这个文件是用于控制飞机的电机的。
  * Implementation of AR.Drone 1.0 / 2.0 motor control interface
+ * 这个适用于 飞行器 1.0和2.0的飞行控制
  */
 
 #include <px4_config.h>
@@ -108,7 +110,7 @@ void ar_enable_broadcast(int fd)
 int ar_multiplexing_init()
 {
 	int		fd;
-	
+	// 这个操作模式和linux的思想有些类似。使用打开一个文件来进行操作的
 	fd = open(PX4FMU_DEVICE_PATH, 0);
 
 	if (fd < 0) {

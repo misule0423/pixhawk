@@ -66,6 +66,7 @@
 #include <uORB/topics/actuator_controls_2.h>
 #include <uORB/topics/actuator_controls_3.h>
 #include <uORB/topics/vehicle_rates_setpoint.h>
+#include <uORB/topics/vehicle_control_mode.h>
 #include <uORB/topics/vehicle_global_position.h>
 #include <uORB/topics/parameter_update.h>
 #include <systemlib/param/param.h>
@@ -83,10 +84,7 @@
 /**
  * Daemon management function.
  *
- * This function allows to start / stop the background task (daemon).
- * The purpose of it is to be able to start the controller on the
- * command line, query its status and stop it, without giving up
- * the command line to one particular process or the need for bg/fg
+ * This function allows to start / stop the background task (daemon)
  * ^Z support by the shell.
  */
 __EXPORT int ex_fixedwing_control_main(int argc, char *argv[]);
@@ -96,10 +94,11 @@ __EXPORT int ex_fixedwing_control_main(int argc, char *argv[]);
  */
 int fixedwing_control_thread_main(int argc, char *argv[]);
 
+
+
 /**
- * Print the correct usage.
- */
-static void usage(const char *reason);
+ * Print the correct usage */
+//static void usage(const char *reason);
 
 /**
  * Control roll and pitch angle.
@@ -137,6 +136,8 @@ static bool thread_running = false;		/**< Daemon status flag */
 static int deamon_task;				/**< Handle of deamon task / thread */
 static struct params p;
 static struct param_handles ph;
+
+
 
 void control_attitude(const struct vehicle_attitude_setpoint_s *att_sp, const struct vehicle_attitude_s *att,
 		      struct vehicle_rates_setpoint_s *rates_sp,
@@ -204,6 +205,9 @@ void control_heading(const struct vehicle_global_position_s *pos, const struct p
 int fixedwing_control_thread_main(int argc, char *argv[])
 {
 	/* read arguments */
+	// 读取输入的参数，如果参数里面带 -v 或者是 -verbose 的话
+	// 当输入 -v 或者是 -verbose 这两个参数之一的话，那么在终端会打印提示信息
+	// 是一个控制显示详细信息的一个控制开关。
 	bool verbose = false;
 
 	for (int i = 1; i < argc; i++) {
@@ -216,6 +220,7 @@ int fixedwing_control_thread_main(int argc, char *argv[])
 	warnx("[example fixedwing control] started");
 
 	/* initialize parameters, first the handles, then the values */
+	// 初始化参数，第一个函数的接口
 	parameters_init(&ph);
 	parameters_update(&ph, &p);
 
@@ -260,6 +265,9 @@ int fixedwing_control_thread_main(int argc, char *argv[])
 	struct position_setpoint_s global_sp;
 	memset(&global_sp, 0, sizeof(global_sp));
 
+	struct vehicle_control_mode_s _vcontrol_mode;
+	memset (&_vcontrol_mode, 0, sizeof(_vcontrol_mode));
+
 	/* output structs - this is what is sent to the mixer */
 	struct actuator_controls_s actuators;
 	memset(&actuators, 0, sizeof(actuators));
@@ -285,6 +293,10 @@ int fixedwing_control_thread_main(int argc, char *argv[])
 	int global_sp_sub = orb_subscribe(ORB_ID(position_setpoint_triplet));
 	int param_sub = orb_subscribe(ORB_ID(parameter_update));
 
+	int _vcontrol_mode_sub = orb_subscribe(ORB_ID(vehicle_control_mode));
+
+	bool vcontrol_mode_updated;
+
 	/* Setup of loop */
 
 	struct pollfd fds[2] = {{ .fd = param_sub, .events = POLLIN },
@@ -302,7 +314,10 @@ int fixedwing_control_thread_main(int argc, char *argv[])
 		 *
 		 * This design pattern makes the controller also agnostic of the attitude
 		 * update speed - it runs as fast as the attitude updates with minimal latency.
+		 *
 		 */
+		
+
 		int ret = poll(fds, 2, 500);
 
 		if (ret < 0) {
@@ -315,6 +330,11 @@ int fixedwing_control_thread_main(int argc, char *argv[])
 		} else if (ret == 0) {
 			/* no return value = nothing changed for 500 ms, ignore */
 		} else {
+
+
+			// test
+			//printf("[INFO] printf 500ms\n");
+			//warnx("[INFO] warnx  500 ms \n");j
 
 			/* only update parameters if they changed */
 			if (fds[0].revents & POLLIN) {
@@ -370,12 +390,42 @@ int fixedwing_control_thread_main(int argc, char *argv[])
 				    isfinite(actuators.control[1]) &&
 				    isfinite(actuators.control[2]) &&
 				    isfinite(actuators.control[3])) {
-					orb_publish(ORB_ID_VEHICLE_ATTITUDE_CONTROLS, actuator_pub, &actuators);
+				    orb_publish(ORB_ID_VEHICLE_ATTITUDE_CONTROLS, actuator_pub, &actuators);
 
 					if (verbose) {
 						warnx("published");
 					}
 				}
+
+				orb_check(_vcontrol_mode_sub,&vcontrol_mode_updated);
+
+				if (vcontrol_mode_updated)
+				{
+					orb_copy(ORB_ID(vehicle_control_mode), _vcontrol_mode_sub, &_vcontrol_mode);
+
+					if (_vcontrol_mode.flag_control_attitude_enabled) {
+						printf("say i'am attitude_mode!!\n ");
+					}
+					if (_vcontrol_mode.flag_control_auto_enabled)
+					{
+						printf("say i'am auto mode !! \n");
+					}
+					if (_vcontrol_mode.flag_control_manual_enabled)
+					{
+						printf("say i'am manual mode !!\n");
+					}
+					if (_vcontrol_mode.flag_control_form_enabled)
+					{
+
+						printf("fuck yes!!\n");
+					}
+				}
+
+				
+
+
+
+				//printf("say hello!!\n");   // yes !! he did work!!
 			}
 		}
 	}
@@ -396,6 +446,8 @@ int fixedwing_control_thread_main(int argc, char *argv[])
 }
 
 /* Startup Functions */
+//用于打印提示信息
+//指令输入错误后，用于打印提示信息
 
 static void
 usage(const char *reason)
@@ -412,9 +464,11 @@ usage(const char *reason)
  * The daemon app only briefly exists to start
  * the background job. The stack size assigned in the
  * Makefile does only apply to this management task.
- *
+ * 守护程序的应用程序只是简单地存在启动后台作业。
+ * 在Makefile中指定的堆栈大小并不只适用于这种管理任务。
  * The actual stack size should be set in the call
  * to px4_task_spawn_cmd().
+ * 真实堆栈大小分配应该被 px4_spawn_cmd() 这条指令所执行
  */
 int ex_fixedwing_control_main(int argc, char *argv[])
 {
@@ -431,12 +485,13 @@ int ex_fixedwing_control_main(int argc, char *argv[])
 		}
 
 		thread_should_exit = false;
+		printf("\n[info]argv ==== %d\n",&argv);
 		deamon_task = px4_task_spawn_cmd("ex_fixedwing_control",
 					     SCHED_DEFAULT,
 					     SCHED_PRIORITY_MAX - 20,
 					     2048,
-					     fixedwing_control_thread_main,
-					     (argv) ? (char * const *)&argv[2] : (char * const *)NULL);
+					     fixedwing_control_thread_main,   // 调度一个函数 难道不需要函数的输入参数么。
+					     (argv) ? (char * const *)&argv[2] : (char * const *)NULL);  //这里存在疑问。难道有些进程是需要输入三个参数才能执行的么
 		thread_running = true;
 		exit(0);
 	}

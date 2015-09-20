@@ -68,15 +68,17 @@ float ECL_RollController::control_attitude(const struct ECL_ControlData &ctl_dat
 	float roll_error = ctl_data.roll_setpoint - ctl_data.roll;
 
 	/* Apply P controller */
+	// 这里做了一个误差分辨率的调节
 	_rate_setpoint = roll_error / _tc;
 
 	/* limit the rate */ //XXX: move to body angluar rates
+	// 这里做了一个限位的操作。
 
 	if (_max_rate > 0.01f) {
 		_rate_setpoint = (_rate_setpoint > _max_rate) ? _max_rate : _rate_setpoint;
 		_rate_setpoint = (_rate_setpoint < -_max_rate) ? -_max_rate : _rate_setpoint;
 	}
-
+	// 最后输出
 	return _rate_setpoint;
 }
 
